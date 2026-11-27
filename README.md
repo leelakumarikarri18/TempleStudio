@@ -27,10 +27,10 @@ docker compose up --build
 ## Architecture
 
 - `api/index.go` — Vercel Go Function entry point.
-- `studio.go` — embedded-file HTTP handler shared by Vercel and local execution.
+- `studio/studio.go` — embedded-file HTTP handler shared by Vercel and local execution.
 - `cmd/server/main.go` — local/Docker server.
-- `static/` — browser application and all visual assets.
-- `data/temples.json` — the 90-temple English/Telugu content library.
+- `studio/static/` — browser application and all visual assets.
+- `studio/data/temples.json` — the 90-temple English/Telugu content library.
 - `vercel.json` — explicit catch-all routing to the Go function.
 
 Preview composition, text layout, custom-image resizing, animation, and video recording run in the browser. This design avoids serverless filesystem, FFmpeg, timeout, background-job, and cross-invocation state problems. Chrome and Edge normally export MP4 when their MediaRecorder supports it; other browsers fall back to WebM. Export runs in real time, so an 18-second short takes approximately 18 seconds to record.

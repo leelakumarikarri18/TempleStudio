@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	studio "github.com/leelakumarikarri18/TempleStudio"
+	"github.com/leelakumarikarri18/TempleStudio/studio"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	studio "github.com/leelakumarikarri18/TempleStudio"
+	"github.com/leelakumarikarri18/TempleStudio/studio"
 )
 
 var app = studio.NewHandler()
