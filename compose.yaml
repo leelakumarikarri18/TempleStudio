@@ -1,0 +1,10 @@
+services:
+  temple-studio:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - temple-runtime:/app/runtime
+    restart: unless-stopped
+volumes:
+  temple-runtime:
