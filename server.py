@@ -6,7 +6,11 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, unquote
 from PIL import Image, ImageDraw, ImageFont, ImageOps, features
 
-ROOT=Path(__file__).resolve().parent; STATIC=ROOT/'static'; WORK=ROOT/'runtime'; UPLOAD=WORK/'uploads'; EXPORT=WORK/'exports'
+ROOT=Path(__file__).resolve().parent; STATIC=ROOT/'static'
+# A Vercel function's deployed files are read-only.  Keep generated files in
+# its writable scratch directory, while preserving the existing local/Docker
+# runtime directory everywhere else.
+WORK=Path(os.getenv('TEMPLE_WORK_DIR','/tmp/temple-studio' if os.getenv('VERCEL') else ROOT/'runtime')).resolve(); UPLOAD=WORK/'uploads'; EXPORT=WORK/'exports'
 for p in [UPLOAD,EXPORT]:p.mkdir(parents=True,exist_ok=True)
 DATA=json.loads((ROOT/'data/temples.json').read_text(encoding='utf-8')); BYDAY={x['day']:x for x in DATA}
 W,H,HEADER=1080,1920,550; FPS=15; CREAM=(255,239,220)
