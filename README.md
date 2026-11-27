@@ -38,3 +38,4 @@ Open **http://localhost:8080**. Windows uses locally installed Georgia and Nirma
 
 All 720 text cards were checked for layout fit. The `samples/` directory contains two actual exported MP4s (18-second Telugu and 24-second English). Browser navigation in the build environment was blocked by an administrator policy, so interactive browser testing was not completed; Python API and FFmpeg exports were tested.
 # TempleStudio
+# TempleStudio
