@@ -57,3 +57,13 @@ Auto duration is the default and estimates reading time from the text (180 words
 The MP4 files in `samples/` are legacy examples from the previous version, not new workbook exports.
 
 Run `node tests/story.test.cjs` to verify that all 180 narration variants split into three complete, ordered parts.
+
+## YouTube Shorts upload details
+
+Below the video export/download controls, **YouTube Shorts details** automatically generates a title, description and comma-separated tags for each of the 90 temples in English and Telugu. Use the shortcut next to Customize short to jump to the panel. Copy each field into YouTube Studio, or use Copy all details for a combined text block. Metadata follows the selected day, language, script and image; changing the video settings clears the old download link to avoid attaching the wrong metadata to an earlier export.
+
+Titles use the opening question, temple name when needed, and #Shorts where it fits. Descriptions include the temple name, question, a story excerpt, a natural engagement prompt, relevant hashtags and an illustration notice where appropriate. Tags include English/Telugu names, locally curated topic phrases, region and related temple search terms. Limits: 100 title characters, 5,000 description characters, 500 tag characters (including separator/space overhead). The generator runs locally without any API key, paid service or live keyword-volume data. Custom script edits update the title and excerpt and omit the default story-specific topic tags to avoid mismatched keywords.
+
+Guidance consulted: [Shorts search and discovery](https://support.google.com/youtube/answer/11914225), [title tips](https://support.google.com/youtube/answer/12340300), [description tips](https://support.google.com/youtube/answer/12948449), [tags](https://support.google.com/youtube/answer/146402), [hashtags](https://support.google.com/youtube/answer/6390658). Metadata cannot guarantee views or subscribers; audience retention and viewer relevance matter more than tag volume.
+
+Run `node tests/metadata.test.cjs` to verify all 180 metadata sets and custom edit behavior.
