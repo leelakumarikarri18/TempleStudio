@@ -47,7 +47,7 @@ func (appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	case "/api/temples":
-		serveEmbedded(w, r, "data/temples.json", "application/json; charset=utf-8", "public, max-age=300, s-maxage=3600")
+		serveEmbedded(w, r, "data/temples.json", "application/json; charset=utf-8", "public, max-age=0, must-revalidate")
 		return
 	case "/", "/index.html":
 		serveEmbedded(w, r, "static/index.html", "text/html; charset=utf-8", "public, max-age=0, must-revalidate")
