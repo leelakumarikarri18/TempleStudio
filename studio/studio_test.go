@@ -14,6 +14,7 @@ func TestRoutes(t *testing.T) {
 	}{
 		{"/", "text/html", "Andhra Temples", http.StatusOK},
 		{"/app.js", "text/javascript", "refreshLayout", http.StatusOK},
+		{"/export.js", "text/javascript", "avc1.424028", http.StatusOK},
 		{"/style.css", "text/css", ":root", http.StatusOK},
 		{"/assets/content-template.png", "image/png", "", http.StatusOK},
 		{"/api/temples", "application/json", "Tirumala Venkateswara", http.StatusOK},
