@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');
-let temples=[],day=1,lang='en',sec='auto',filter='all',state=null,scenes=[],time=0,playing=false,raf=0,prev=0,layoutVersion=0,layoutTimer,loading=false,recorder=null,exportCancelled=false,exportFile=null;
+let temples=[],day=1,lang='en',sec='auto',filter='all',state=null,scenes=[],time=0,playing=false,raf=0,prev=0,layoutVersion=0,layoutTimer,loading=false,recorder=null,exportCancelled=false,exportFile=null,exportAbort=null;
 const {splitStory,sceneDurations,count:wordCount}=TempleStory;
 const labels=['Opening question','Full continuous story'],shortLabels=['Opening','Story 1','Story 2','Story 3'];
 const edits=(()=>{try{const fresh=localStorage.getItem('ap-temple-edits-v3');if(fresh)return JSON.parse(fresh);const old=JSON.parse(localStorage.getItem('ap-temple-edits-v2')||'{}');return Object.fromEntries(Object.entries(old).filter(([k])=>k.startsWith('image-')))}catch{return {}}})();
@@ -44,11 +44,11 @@ async function exportVideo(){
   try{
     if(!canvas.captureStream||!window.MediaRecorder||!window.TempleExport)throw new Error('This browser cannot record a YouTube-ready video. Use a current Chrome or Edge browser.');
     showError('');pause();save();setExporting(true);clearDownload();$('exportProgress').hidden=false;$('progress').value=0;
-    const prepared=await TempleExport.createStream(canvas,window),chunks=[];
+    const prepared=TempleExport.createStream(canvas),chunks=[];
     cleanup=prepared.cleanup;
-    const made=TempleExport.createRecorder(prepared.stream,MediaRecorder,{videoBitsPerSecond:6000000,audioBitsPerSecond:128000}),current=made.recorder,expectedDuration=duration();
+    const made=TempleExport.createRecorder(prepared.stream,MediaRecorder,{videoBitsPerSecond:6000000}),current=made.recorder,expectedDuration=duration();
     let recordingError=null;
-    recorder=current;exportCancelled=false;
+    recorder=current;exportCancelled=false;exportAbort=new AbortController();
     current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
     current.onerror=e=>{recordingError=e.error||new Error('Video recording failed')};
     current.onstop=async()=>{
@@ -57,23 +57,28 @@ async function exportVideo(){
         if(recordingError)throw recordingError;
         if(exportCancelled){$('exportStatus').textContent='Export cancelled';return}
         if(!chunks.length)throw new Error('The browser did not produce a video file. Please export again.');
+        const recordedType=TempleExport.actualType(current,made.requestedType);
+        if(!recordedType.includes('mp4'))throw new Error('The browser did not produce an MP4 recording. Use the latest Chrome or Edge.');
+        $('exportStatus').textContent='Finalizing YouTube-compatible MP4…';
+        const rawBlob=new Blob(chunks,{type:'video/mp4'}),finalized=await TempleExport.finalizeMp4(rawBlob,window,{signal:exportAbort.signal,onProgress:progress=>{$('progress').value=88+Math.min(11,progress*11)}}),blob=finalized.blob,url=URL.createObjectURL(blob),slug=record().en.name.replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,''),filename=`Day-${String(day).padStart(2,'0')}-${slug}-${lang.toUpperCase()}-${expectedDuration}s.mp4`;
+        if(exportCancelled){URL.revokeObjectURL(url);$('exportStatus').textContent='Export cancelled';return}
         $('exportStatus').textContent='Preparing playable preview…';
-        const recordedType=TempleExport.actualType(current,made.requestedType),ext=TempleExport.extensionFor(recordedType),containerType=ext==='mp4'?'video/mp4':'video/webm',blob=new Blob(chunks,{type:containerType}),url=URL.createObjectURL(blob),slug=record().en.name.replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,''),filename=`Day-${String(day).padStart(2,'0')}-${slug}-${lang.toUpperCase()}-${expectedDuration}s.${ext}`;
         try{await previewExport(url,expectedDuration)}catch(error){URL.revokeObjectURL(url);throw error}
-        exportFile=typeof File==='function'?new File([blob],filename,{type:containerType,lastModified:Date.now()}):null;
-        $('download').href=url;$('download').download=filename;$('download').textContent=`Download ${ext.toUpperCase()}`;$('download').hidden=false;
+        exportFile=typeof File==='function'?new File([blob],filename,{type:'video/mp4',lastModified:Date.now()}):null;
+        $('download').href=url;$('download').download=filename;$('download').textContent='Download MP4';$('download').hidden=false;
         $('shareVideo').hidden=!(exportFile&&navigator.share&&navigator.canShare?.({files:[exportFile]}));
         $('progress').value=100;$('exportStatus').textContent='Export complete · Preview ready';$('download').click();
-      }catch(error){showError(error.message||'Video export failed');$('exportStatus').textContent='Export failed';$('exportPreview').hidden=true}
-      finally{recorder=null;setExporting(false);time=0;render()}
+      }catch(error){if(exportCancelled)$('exportStatus').textContent='Export cancelled';else{showError(error.message||'Video export failed');$('exportStatus').textContent='Export failed'}$('exportPreview').hidden=true}
+      finally{recorder=null;exportAbort=null;setExporting(false);time=0;render()}
     };
-    render(0);TempleExport.startRecorder(current);$('exportStatus').textContent=`Recording ${made.requestedType.includes('mp4')?'MP4':'WebM'} with YouTube audio track…`;
+    render(0);TempleExport.startRecorder(current);$('exportStatus').textContent='Recording MP4…';
     const started=performance.now();
-    function frame(now){if(recorder!==current||current.state==='inactive')return;const elapsed=(now-started)/1000;render(Math.min(elapsed,expectedDuration));$('progress').value=Math.min(99,elapsed/expectedDuration*100);if(elapsed>=expectedDuration){current.stop();return}requestAnimationFrame(frame)}
+    function frame(now){if(recorder!==current||current.state==='inactive')return;const elapsed=(now-started)/1000;render(Math.min(elapsed,expectedDuration));$('progress').value=Math.min(88,elapsed/expectedDuration*88);if(elapsed>=expectedDuration){current.stop();return}requestAnimationFrame(frame)}
     requestAnimationFrame(frame);
-  }catch(error){cleanup();recorder=null;setExporting(false);showError(error.message||'Video export failed');$('exportStatus').textContent='Export failed'}
+  }catch(error){cleanup();recorder=null;exportAbort=null;setExporting(false);showError(error.message||'Video export failed');$('exportStatus').textContent='Export failed'}
 }
 async function shareVideo(){if(!exportFile||!navigator.share)return;try{showError('');await navigator.share({files:[exportFile],title:'Andhra Temples Short'});$('exportStatus').textContent='Video shared'}catch(error){if(error.name!=='AbortError')showError(error.message||'The video could not be shared. Use Download video instead.')}}
-$('search').oninput=drawList;document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));drawList()});document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{if(lang!==b.dataset.lang){lang=b.dataset.lang;selectDay(day)}});document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>setDuration(b.dataset.sec));$('durationMore').onchange=e=>{if(e.target.value)setDuration(e.target.value)};$('play').onclick=play;$('restart').onclick=()=>seek(0);$('end').onclick=()=>seek(duration());$('scrub').oninput=e=>seek(e.target.value);$('nextDay').onclick=()=>{selectDay(day===90?1:day+1);document.querySelector('.templeitem.selected')?.scrollIntoView({block:'nearest',inline:'nearest'})};$('uploadBtn').onclick=()=>$('file').click();$('file').onchange=e=>upload(e.target.files[0]);$('focus').oninput=e=>{state.focus=Number(e.target.value)/100;save();clearDownload();scheduleLayout()};$('restoreImage').onclick=()=>{state.image=record().image;state.focus=.5;save();clearDownload();updateImage();renderMetadata();drawList();refreshLayout()};$('resetScript').onclick=()=>{const t=record()[lang];state.hook=t.hook;state.story=t.story;time=0;save();clearDownload();fillFields();renderMetadata();scheduleLayout();renderTiming()};$('exportTop').onclick=$('exportBottom').onclick=exportVideo;$('shareVideo').onclick=shareVideo;$('cancelExport').onclick=()=>{if(recorder&&recorder.state!=='inactive'){exportCancelled=true;recorder.stop()}};
+$('search').oninput=drawList;document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));drawList()});document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{if(lang!==b.dataset.lang){lang=b.dataset.lang;selectDay(day)}});document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>setDuration(b.dataset.sec));$('durationMore').onchange=e=>{if(e.target.value)setDuration(e.target.value)};$('play').onclick=play;$('restart').onclick=()=>seek(0);$('end').onclick=()=>seek(duration());$('scrub').oninput=e=>seek(e.target.value);$('nextDay').onclick=()=>{selectDay(day===90?1:day+1);document.querySelector('.templeitem.selected')?.scrollIntoView({block:'nearest',inline:'nearest'})};$('uploadBtn').onclick=()=>$('file').click();$('file').onchange=e=>upload(e.target.files[0]);$('focus').oninput=e=>{state.focus=Number(e.target.value)/100;save();clearDownload();scheduleLayout()};$('restoreImage').onclick=()=>{state.image=record().image;state.focus=.5;save();clearDownload();updateImage();renderMetadata();drawList();refreshLayout()};$('resetScript').onclick=()=>{const t=record()[lang];state.hook=t.hook;state.story=t.story;time=0;save();clearDownload();fillFields();renderMetadata();scheduleLayout();renderTiming()};$('exportTop').onclick=$('exportBottom').onclick=exportVideo;$('shareVideo').onclick=shareVideo;
+$('cancelExport').onclick=()=>{exportCancelled=true;exportAbort?.abort();if(recorder&&recorder.state!=='inactive')recorder.stop()};document.querySelector('.exportmeta span').textContent='YouTube-ready · Fast Start MP4';
 $('metadataJump').onclick=()=>$('youtubeMetadata').scrollIntoView({block:'start',behavior:'smooth'});document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{const field=$(b.dataset.copy);copyMetadataText(field.value,field)});$('copyMetadata').onclick=()=>copyMetadataText(`Title\n${$('ytTitle').value}\n\nDescription\n${$('ytDescription').value}\n\nTags\n${$('ytTags').value}`);
 (async()=>{try{temples=await request('/api/temples');day=temples.some(x=>x.day===prefs.day)?prefs.day:1;lang=prefs.lang==='te'?'te':'en';sec=[5,7,10,12,15].includes(prefs.sec)?prefs.sec:'auto';selectDay(day);document.querySelector('.templeitem.selected')?.scrollIntoView({block:'nearest'});const count=temples.filter(t=>t.imageType==='photo').length;$('libraryStats').textContent=`${count} photos · ${temples.length-count} artworks`}catch(e){$('previewLoading').textContent='Studio could not load';showError(e.message)}})();
