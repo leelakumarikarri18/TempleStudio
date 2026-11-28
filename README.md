@@ -33,7 +33,7 @@ docker compose up --build
 - `studio/data/temples.json` — the 90-temple English/Telugu content library.
 - `vercel.json` — explicit catch-all routing to the Go function.
 
-Preview composition, text layout, custom-image resizing, animation, and video recording run in the browser. This design avoids serverless filesystem, FFmpeg, timeout, background-job, and cross-invocation state problems. Chrome and Edge normally export MP4 when their MediaRecorder supports it; other browsers fall back to WebM. Export runs in real time, so a 50-second short takes approximately 50 seconds to record.
+Preview composition, text layout, custom-image resizing, animation, and video recording run in the browser. This design avoids serverless filesystem, FFmpeg, timeout, background-job, and cross-invocation state problems. Chrome and Edge normally export MP4 when their MediaRecorder supports it; other browsers fall back to WebM. Each export is finalized as one continuous recording blob for compatibility with mobile Gallery players. Export runs in real time, so a 50-second short takes approximately 50 seconds to record. Keep the browser open and the screen awake until recording and download finish.
 
 User edits and resized replacement images stay in browser storage. They are never uploaded to the server.
 
