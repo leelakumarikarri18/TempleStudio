@@ -50,7 +50,7 @@ Temple data endpoint: `/api/temples`
 
 ## Continuous story update
 
-The embedded library uses the supplied `source/Temple_Content.xlsx` (90 Days English and 90 Days Telugu). Each language has an opening question and one complete narration. The browser splits the narration into three ordered clips, preferring balanced sentence boundaries. The original wording is kept; text appears one line at a time on the existing template. The export records the opening and all three clips into one vertical video.
+The embedded library uses the supplied `source/Temple_Content.xlsx` (90 Days English and 90 Days Telugu). Each language has an opening question and one complete narration. The browser splits the narration into three ordered clips, preferring balanced sentence boundaries. The original wording is kept; text appears one line at a time on the existing template. Opening questions are centered, while story text uses a narrower, left-aligned mobile reading column with increased line spacing. The export records the opening and all three clips into one vertical video.
 
 Auto duration is the default and estimates reading time from the text (180 words/min English, 125 words/min Telugu, plus pauses). The original fixed-duration presets remain available for faster clips, but may be too short for comfortable reading of longer stories. English/Telugu are exported separately as before. The script editor allows editing the whole story; Reset restores the new workbook version. Existing browser image overrides are carried forward, but old script drafts are intentionally not loaded over the updated content.
 
